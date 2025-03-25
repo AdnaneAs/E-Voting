@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { QRCodeSVG } from 'qrcode.react';
 import styles from '../../styles/Admin.module.css';
 import ConnectWallet from '../../components/ConnectWallet';
 import initCredentialManager, {
@@ -36,6 +37,15 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
   // Selected credentials for batch operations
   const [selectedCredentials, setSelectedCredentials] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  
+  // Wallet info modal state
+  const [selectedWalletInfo, setSelectedWalletInfo] = useState({
+    isOpen: false,
+    address: '',
+    balance: '',
+    status: false,
+    createdAt: null
+  });
   
   // Form state for creating a new credential
   const [newSingleCredential, setNewSingleCredential] = useState({
@@ -468,6 +478,28 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
     return new Date(timestamp * 1000).toLocaleString();
   };
   
+  // Handle opening wallet info modal
+  const handleOpenWalletInfo = (credential) => {
+    setSelectedWalletInfo({
+      isOpen: true,
+      address: credential.walletAddress,
+      balance: credential.formattedBalance,
+      status: credential.isActive,
+      createdAt: credential.createdAt
+    });
+  };
+  
+  // Handle closing wallet info modal
+  const handleCloseWalletInfo = () => {
+    setSelectedWalletInfo({
+      isOpen: false,
+      address: '',
+      balance: '',
+      status: false,
+      createdAt: null
+    });
+  };
+  
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
   }
@@ -681,7 +713,13 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                           className={styles.checkbox}
                         />
                       </td>
-                      <td className={styles.walletAddress}>{credential.walletAddress}</td>
+                      <td 
+                        className={`${styles.walletAddress} ${styles.clickable}`} 
+                        onClick={() => handleOpenWalletInfo(credential)}
+                        title="Click for wallet details"
+                      >
+                        {credential.walletAddress}
+                      </td>
                       <td>
                         <span className={`${styles.badge} ${credential.isActive ? styles.statusActive : styles.statusInactive}`}>
                           {credential.isActive ? 'Active' : 'Inactive'}
@@ -803,6 +841,78 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Info Modal with QR Code */}
+      {selectedWalletInfo.isOpen && (
+        <div className={styles.modal}>
+          <div className={styles.walletInfoModalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Wallet Information</h3>
+              <button
+                className={styles.closeButton}
+                onClick={handleCloseWalletInfo}
+              >
+                &times;
+              </button>
+            </div>
+            <div className={styles.walletInfoModalBody}>
+              <div className={styles.walletInfoGrid}>
+                <div className={styles.walletInfoDetails}>
+                  <div className={styles.walletInfoItem}>
+                    <span className={styles.walletInfoLabel}>Address:</span>
+                    <span className={styles.walletInfoValue}>{selectedWalletInfo.address}</span>
+                  </div>
+                  <div className={styles.walletInfoItem}>
+                    <span className={styles.walletInfoLabel}>Balance:</span>
+                    <span className={styles.walletInfoValue}>{selectedWalletInfo.balance}</span>
+                  </div>
+                  <div className={styles.walletInfoItem}>
+                    <span className={styles.walletInfoLabel}>Status:</span>
+                    <span className={`${styles.badge} ${selectedWalletInfo.status ? styles.statusActive : styles.statusInactive}`}>
+                      {selectedWalletInfo.status ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className={styles.walletInfoItem}>
+                    <span className={styles.walletInfoLabel}>Created:</span>
+                    <span className={styles.walletInfoValue}>{formatDate(selectedWalletInfo.createdAt)}</span>
+                  </div>
+                </div>
+                <div className={styles.qrCodeContainer}>
+                  <h4>Scan to import in MetaMask</h4>
+                  <div className={styles.qrCode}>
+                    <QRCodeSVG 
+                      value={`ethereum:${selectedWalletInfo.address}`}
+                      size={200}
+                      bgColor={"#ffffff"}
+                      fgColor={"#000000"}
+                      level={"L"}
+                      includeMargin={false}
+                    />
+                  </div>
+                  <p className={styles.qrHelp}>Scan this QR code with MetaMask mobile app to add this wallet</p>
+                </div>
+              </div>
+              <div className={styles.walletInfoActions}>
+                <button
+                  className={styles.button}
+                  onClick={() => {
+                    handleCloseWalletInfo();
+                    handleOpenFundForm(selectedWalletInfo.address);
+                  }}
+                >
+                  Add Funds
+                </button>
+                <button
+                  className={styles.buttonSecondary}
+                  onClick={handleCloseWalletInfo}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
