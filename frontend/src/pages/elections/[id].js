@@ -592,64 +592,68 @@ export default function ElectionDetail({ contract, account, isAdmin, loading, on
         {candidates.length === 0 ? (
           <p>No candidates have been added to this election.</p>
         ) : (
-          <div className={styles.candidatesList}>
-            {candidates.map((candidate) => (
-              <div key={candidate.id} className={styles.candidateCard}>
-                <div className={styles.candidateInfo}>
-                  <h3>{candidate.name}</h3>
-                  <p>Votes: {candidate.voteCount}</p>
-                  {election.totalVotes > 0 && (
-                    <div className={styles.progressBar}>
-                      <div 
-                        className={styles.progressFill} 
-                        style={{ width: `${(candidate.voteCount / election.totalVotes) * 100}%` }}
-                      ></div>
-                      <span className={styles.progressText}>
-                        {((candidate.voteCount / election.totalVotes) * 100).toFixed(1)}%
-                      </span>
+          election.status === 1 && !hasEnded && !isWaitingForStart && !hasVoted ? (
+            // Selectable candidates for active voting
+            <>
+              <div className={styles.candidatesList}>
+                {candidates.map((candidate) => (
+                  <div 
+                    key={candidate.id} 
+                    className={`${styles.candidateCard} ${selectedCandidate === candidate.id.toString() ? styles.candidateCardSelected : ''}`}
+                    onClick={() => setSelectedCandidate(candidate.id.toString())}
+                  >
+                    <div className={styles.candidateInfo}>
+                      <h3>{candidate.name}</h3>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              
+              {errorMessage && (
+                <div className={styles.error}>
+                  <p>{errorMessage}</p>
+                </div>
+              )}
+              
+              <div className={styles.votingSection}>
+                {voteGas && web3 && (
+                  <GasEstimation estimatedGas={voteGas} web3={web3} />
+                )}
+                <button
+                  onClick={handleVote}
+                  className={styles.voteButton}
+                  disabled={!selectedCandidate || isVoting}
+                >
+                  {isVoting ? 'Processing...' : 'Submit Vote'}
+                </button>
+              </div>
+            </>
+          ) : (
+            // Results view for non-voting scenarios
+            <div className={styles.candidatesList}>
+              {candidates.map((candidate) => (
+                <div key={candidate.id} className={styles.resultsCard}>
+                  <div className={styles.candidateInfo}>
+                    <h3>{candidate.name}</h3>
+                    <p>Votes: {candidate.voteCount}</p>
+                    {election.totalVotes > 0 && (
+                      <div className={styles.progressBar}>
+                        <div 
+                          className={styles.progressFill} 
+                          style={{ width: `${(candidate.voteCount / election.totalVotes) * 100}%` }}
+                        ></div>
+                        <span className={styles.progressText}>
+                          {((candidate.voteCount / election.totalVotes) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
-      
-      {election.status === 1 && !hasEnded && !isWaitingForStart && !hasVoted && (
-        <div className={styles.votingSection}>
-          <h2>Cast Your Vote</h2>
-          <form onSubmit={handleVote}>
-            <div className={styles.formGroup}>
-              <label htmlFor="candidateSelect">Select a candidate:</label>
-              <select
-                id="candidateSelect"
-                value={selectedCandidate}
-                onChange={(e) => setSelectedCandidate(e.target.value)}
-                disabled={isVoting}
-                required
-              >
-                <option value="">-- Select Candidate --</option>
-                {candidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {voteGas && web3 && (
-              <GasEstimation estimatedGas={voteGas} web3={web3} />
-            )}
-            <button
-              type="submit"
-              className={styles.button}
-              disabled={!selectedCandidate || isVoting}
-            >
-              {isVoting ? 'Processing...' : 'Vote'}
-            </button>
-          </form>
-        </div>
-      )}
       
       {election.status === 1 && !hasEnded && !isWaitingForStart && hasVoted && (
         <div className={styles.votedMessage}>
