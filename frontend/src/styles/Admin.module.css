@@ -255,12 +255,24 @@
   padding: 0.4rem 0.8rem;
 }
 
-.dangerButton {
+.buttonDanger {
   background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.dangerButton:hover {
+.buttonDanger:hover {
   background-color: #bb2d3b;
+}
+
+.dangerButton {
+  background-color: #dc3545;
 }
 
 .electionsGrid {
@@ -711,6 +723,22 @@
   font-size: 1.5rem;
   cursor: pointer;
   color: #666;
+}
+
+/* Gas Estimation Styles */
+.gasEstimation {
+  margin-top: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+}
+
+.gasEstimation p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-size: 0.9rem;
 }
 
 .success {
