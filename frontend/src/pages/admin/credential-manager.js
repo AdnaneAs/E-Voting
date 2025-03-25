@@ -500,6 +500,163 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
     });
   };
   
+  // Handle printing wallet info as PDF
+  const handlePrintWalletInfo = () => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      alert("Please allow popups for this website to print wallet information.");
+      return;
+    }
+    
+    // Get current date for the printout
+    const printDate = new Date().toLocaleDateString();
+    
+    // Create print-friendly content
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Wallet Credential - ${selectedWalletInfo.address.substring(0, 10)}...</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+          }
+          .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+          }
+          .qr-section {
+            text-align: center;
+            margin: 20px 0;
+          }
+          .wallet-details {
+            margin: 20px 0;
+          }
+          .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+          }
+          .detail-label {
+            font-weight: bold;
+            width: 100px;
+            color: #666;
+          }
+          .detail-value {
+            flex: 1;
+            font-family: monospace;
+            word-break: break-all;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+          }
+          .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+          }
+          .active {
+            background-color: #d1e7dd;
+            color: #0f5132;
+          }
+          .inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-container">
+          <div class="header">
+            <h2>E-Voting Wallet Credential</h2>
+            <p>Generated on ${printDate}</p>
+          </div>
+          
+          <div class="qr-section">
+            <h3>Scan to import in MetaMask</h3>
+            <img 
+              src="https://api.qrserver.com/v1/create-qr-code/?data=ethereum:${selectedWalletInfo.address}&size=200x200" 
+              alt="Wallet QR Code"
+              width="200"
+              height="200"
+            />
+            <p>Scan this QR code with MetaMask mobile app to add this wallet</p>
+          </div>
+          
+          <div class="wallet-details">
+            <h3>Wallet Information</h3>
+            
+            <div class="detail-row">
+              <div class="detail-label">Address:</div>
+              <div class="detail-value">${selectedWalletInfo.address}</div>
+            </div>
+            
+            <div class="detail-row">
+              <div class="detail-label">Balance:</div>
+              <div class="detail-value">${selectedWalletInfo.balance}</div>
+            </div>
+            
+            <div class="detail-row">
+              <div class="detail-label">Status:</div>
+              <div class="detail-value">
+                <span class="badge ${selectedWalletInfo.status ? 'active' : 'inactive'}">
+                  ${selectedWalletInfo.status ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+            
+            <div class="detail-row">
+              <div class="detail-label">Created:</div>
+              <div class="detail-value">${formatDate(selectedWalletInfo.createdAt)}</div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>E-Voting System - Secure Blockchain Voting Platform</p>
+            <p>Keep this credential information secure and confidential</p>
+          </div>
+        </div>
+        <script>
+          // Auto-print when loaded
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              // Close window after printing (or if print is cancelled)
+              setTimeout(function() {
+                window.close();
+              }, 500);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+    
+    // Write the content to the new window
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+  
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
   }
@@ -911,6 +1068,12 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                   onClick={handleCloseWalletInfo}
                 >
                   Close
+                </button>
+                <button
+                  className={styles.buttonSecondary}
+                  onClick={handlePrintWalletInfo}
+                >
+                  Print
                 </button>
               </div>
             </div>

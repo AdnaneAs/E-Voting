@@ -843,3 +843,55 @@
   padding-top: 1rem;
   border-top: 1px solid #eee;
 }
+
+/* Print styles */
+@media print {
+  /* Instead of using body *, we'll use relative selectors */
+  .printing {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none;
+    background: white;
+  }
+  
+  /* Hide buttons in print view */
+  .printing .walletInfoActions,
+  .printing .closeButton {
+    display: none;
+  }
+  
+  /* Page layout for print */
+  .printing .modalHeader {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    margin-bottom: 1rem;
+  }
+  
+  .printing .modalHeader h3 {
+    font-size: 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  .printing .walletInfoModalBody {
+    padding: 0 2rem 2rem;
+  }
+  
+  .printing .qrCodeContainer {
+    background-color: white;
+    border: 1px solid #ddd;
+  }
+  
+  /* Add print footer */
+  .printing .walletInfoModalBody::after {
+    content: "E-Voting System - Wallet Credential";
+    display: block;
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: #666;
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+  }
+}
