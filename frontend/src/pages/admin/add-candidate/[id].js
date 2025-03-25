@@ -4,7 +4,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import styles from '../../../styles/Admin.module.css';
 import ConnectWallet from '../../../components/ConnectWallet';
-import { formatElectionStatus } from '../../../utils/web3';
+import GasEstimation from '../../../components/GasEstimation';
+import initWeb3, { formatElectionStatus } from '../../../utils/web3';
 
 export default function AddCandidate({ contract, account, isAdmin, loading, onConnect }) {
   const router = useRouter();
@@ -16,6 +17,18 @@ export default function AddCandidate({ contract, account, isAdmin, loading, onCo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [loadingData, setLoadingData] = useState(true);
+  const [estimatedGas, setEstimatedGas] = useState(null);
+  const [web3, setWeb3] = useState(null);
+  
+  // Initialize web3
+  useEffect(() => {
+    const setupWeb3 = async () => {
+      const { web3: web3Instance } = await initWeb3();
+      setWeb3(web3Instance);
+    };
+    
+    setupWeb3();
+  }, []);
   
   // Fetch election details and candidates
   useEffect(() => {
@@ -60,6 +73,29 @@ export default function AddCandidate({ contract, account, isAdmin, loading, onCo
     fetchElectionData();
   }, [contract, account, id]);
   
+  // Update gas estimation when name changes
+  useEffect(() => {
+    const updateGasEstimate = async () => {
+      if (!contract || !account || !id || !candidateName.trim() || !election || election.status !== 0) {
+        setEstimatedGas(null);
+        return;
+      }
+      
+      try {
+        const gas = await contract.methods
+          .addCandidate(id, candidateName)
+          .estimateGas({ from: account });
+          
+        setEstimatedGas(gas);
+      } catch (error) {
+        console.error("Error estimating gas:", error);
+        setEstimatedGas(null);
+      }
+    };
+    
+    updateGasEstimate();
+  }, [contract, account, id, candidateName, election]);
+  
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,10 +111,27 @@ export default function AddCandidate({ contract, account, isAdmin, loading, onCo
         throw new Error('Candidate name is required');
       }
       
-      // Call contract to add candidate
+      // Get gas estimate with 10% buffer
+      let gasToUse;
+      try {
+        const estimatedGas = await contract.methods
+          .addCandidate(id, candidateName)
+          .estimateGas({ from: account });
+          
+        // Add 10% buffer
+        gasToUse = Math.floor(estimatedGas * 1.1);
+      } catch (error) {
+        console.error("Error estimating gas, using default:", error);
+        gasToUse = 200000; // Fallback to default if estimation fails
+      }
+      
+      // Call contract to add candidate with dynamic gas estimation
       await contract.methods
         .addCandidate(id, candidateName)
-        .send({ from: account });
+        .send({ 
+          from: account,
+          gas: gasToUse
+        });
       
       // Reset form and refresh candidates list
       setCandidateName('');
@@ -214,6 +267,10 @@ export default function AddCandidate({ contract, account, isAdmin, loading, onCo
               </button>
             </div>
           </div>
+          
+          {estimatedGas && web3 && candidateName.trim() && (
+            <GasEstimation estimatedGas={estimatedGas} web3={web3} />
+          )}
         </form>
       )}
       
