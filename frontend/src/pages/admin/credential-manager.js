@@ -146,12 +146,26 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
       // Create the credential
       await createCredential(credentialManager, account, wallet.address);
       
-      // Show success message with wallet details
+      // Show success message with wallet details and QR code for private key
       setSuccessMessage(
         <div>
           <p><strong>New wallet generated and registered!</strong></p>
           <p><strong>Address:</strong> {wallet.address}</p>
           <p><strong>Private Key:</strong> {wallet.privateKey}</p>
+          <div className={styles.qrCodeContainer}>
+            <h4>Scan to get private key (KEEP SECURE!)</h4>
+            <div className={styles.qrCode}>
+              <QRCodeSVG 
+                value={wallet.privateKey}
+                size={200}
+                bgColor={"#ffffff"}
+                fgColor={"#000000"}
+                level={"H"}
+                includeMargin={true}
+              />
+            </div>
+            <p className={styles.qrHelp}>Scan this QR code to get the private key (do NOT share this QR code)</p>
+          </div>
           <p className={styles.privateKeyWarning}>
             <strong>Warning:</strong> This is the only time you will see this private key. 
             Please save it in a secure location now!
@@ -225,14 +239,170 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
       // Download the CSV
       downloadCSV(csv, 'new_credentials.csv');
       
+      // Create printable HTML with private key QR codes
+      const printWindow = window.open('', '_blank');
+      
+      if (printWindow) {
+        const printDate = new Date().toLocaleDateString();
+        let printContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Batch Credentials - ${printDate}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                padding: 20px;
+              }
+              h1, h2 {
+                text-align: center;
+              }
+              .warning {
+                background-color: #fff3cd;
+                color: #856404;
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 20px;
+                text-align: center;
+                font-weight: bold;
+              }
+              .credentials-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 20px;
+              }
+              .credential-card {
+                border: 1px solid #ddd;
+                border-radius: 10px;
+                padding: 15px;
+                width: 350px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+              }
+              .credential-header {
+                text-align: center;
+                border-bottom: 2px solid #333;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+              }
+              .qr-section {
+                text-align: center;
+                margin: 15px 0;
+              }
+              .wallet-details {
+                margin: 15px 0;
+              }
+              .detail-row {
+                display: flex;
+                margin-bottom: 8px;
+              }
+              .detail-label {
+                font-weight: bold;
+                width: 100px;
+                color: #666;
+              }
+              .detail-value {
+                flex: 1;
+                font-family: monospace;
+                font-size: 0.8rem;
+                word-break: break-all;
+              }
+              .footer {
+                text-align: center;
+                font-size: 0.8rem;
+                color: #666;
+                margin-top: 10px;
+              }
+              @media print {
+                .pagebreak {
+                  page-break-before: always;
+                }
+                .no-break {
+                  page-break-inside: avoid;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>E-Voting System - Voter Credentials</h1>
+            <p>Generated on ${printDate}</p>
+            <div class="warning">
+              WARNING: These pages contain private keys that provide full access to the wallets.
+              Store securely and distribute to voters individually.
+            </div>
+            <div class="credentials-container">
+        `;
+        
+        // Add each credential as a card with QR code for private key
+        wallets.forEach((wallet, index) => {
+          if (index > 0 && index % 4 === 0) {
+            printContent += '<div class="pagebreak"></div>';
+          }
+          
+          printContent += `
+            <div class="credential-card no-break">
+              <div class="credential-header">
+                <h3>Voter Credential #${index + 1}</h3>
+              </div>
+              
+              <div class="qr-section">
+                <h4>Scan this QR code to get the private key</h4>
+                <img 
+                  src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(wallet.privateKey)}&size=200x200" 
+                  alt="Private Key QR Code"
+                  width="200"
+                  height="200"
+                />
+              </div>
+              
+              <div class="wallet-details">
+                <div class="detail-row">
+                  <div class="detail-label">Address:</div>
+                  <div class="detail-value">${wallet.address}</div>
+                </div>
+                
+                <div class="detail-row">
+                  <div class="detail-label">Private Key:</div>
+                  <div class="detail-value">${wallet.privateKey}</div>
+                </div>
+              </div>
+              
+              <div class="footer">
+                E-Voting System - Keep this credential secure and confidential
+              </div>
+            </div>
+          `;
+        });
+        
+        printContent += `
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            </script>
+          </body>
+          </html>
+        `;
+        
+        printWindow.document.open();
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+      }
+      
       // Show success message
       setSuccessMessage(
         <div>
           <p><strong>{count} new wallets generated and registered!</strong></p>
-          <p>The credentials have been downloaded as a CSV file.</p>
+          <p>The credentials have been downloaded as a CSV file and opened for printing.</p>
           <p className={styles.privateKeyWarning}>
-            <strong>Warning:</strong> This CSV file contains private keys. 
-            Keep it in a secure location!
+            <strong>Warning:</strong> CSV file and printouts contain private keys. 
+            Keep them in a secure location!
           </p>
         </div>
       );
@@ -480,9 +650,13 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
   
   // Handle opening wallet info modal
   const handleOpenWalletInfo = (credential) => {
+    // Check if this is a newly generated credential with a private key
+    const privateKey = credential.privateKey || null;
+    
     setSelectedWalletInfo({
       isOpen: true,
       address: credential.walletAddress,
+      privateKey: privateKey,
       balance: credential.formattedBalance,
       status: credential.isActive,
       createdAt: credential.createdAt
@@ -582,6 +756,15 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
             background-color: #f8d7da;
             color: #721c24;
           }
+          .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+          }
         </style>
       </head>
       <body>
@@ -592,14 +775,17 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
           </div>
           
           <div class="qr-section">
-            <h3>Scan to import in MetaMask</h3>
+            <h3>Scan ${selectedWalletInfo.privateKey ? 'to get private key' : 'to import in MetaMask'}</h3>
             <img 
-              src="https://api.qrserver.com/v1/create-qr-code/?data=ethereum:${selectedWalletInfo.address}&size=200x200" 
-              alt="Wallet QR Code"
+              src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(selectedWalletInfo.privateKey || `ethereum:${selectedWalletInfo.address.startsWith('0x') ? selectedWalletInfo.address : '0x' + selectedWalletInfo.address}`)}&size=200x200" 
+              alt="${selectedWalletInfo.privateKey ? 'Private Key' : 'Wallet Address'} QR Code"
               width="200"
               height="200"
             />
-            <p>Scan this QR code with MetaMask mobile app to add this wallet</p>
+            ${selectedWalletInfo.privateKey ? 
+              '<div class="warning">WARNING: This QR code contains the private key. Keep this document secure!</div>' :
+              '<p>Scan this QR code with MetaMask mobile app to add this wallet</p>'
+            }
           </div>
           
           <div class="wallet-details">
@@ -609,6 +795,13 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
               <div class="detail-label">Address:</div>
               <div class="detail-value">${selectedWalletInfo.address}</div>
             </div>
+            
+            ${selectedWalletInfo.privateKey ? `
+            <div class="detail-row">
+              <div class="detail-label">Private Key:</div>
+              <div class="detail-value">${selectedWalletInfo.privateKey}</div>
+            </div>
+            ` : ''}
             
             <div class="detail-row">
               <div class="detail-label">Balance:</div>
@@ -977,7 +1170,7 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                   />
                   {fundForm.isBatch && (
                     <small className={styles.helpText}>
-                      Each wallet will receive approximately {(fundForm.amount / selectedCredentials.length).toFixed(6)} ETH
+                      Each wallet will receive approximately ${(fundForm.amount / selectedCredentials.length).toFixed(6)} ETH
                     </small>
                   )}
                 </div>
@@ -1039,18 +1232,22 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                   </div>
                 </div>
                 <div className={styles.qrCodeContainer}>
-                  <h4>Scan to import in MetaMask</h4>
+                  <h4>Scan {selectedWalletInfo.privateKey ? 'to get private key' : 'to import in MetaMask'}</h4>
                   <div className={styles.qrCode}>
                     <QRCodeSVG 
-                      value={`ethereum:${selectedWalletInfo.address}`}
+                      value={selectedWalletInfo.privateKey || `ethereum:${selectedWalletInfo.address.startsWith('0x') ? selectedWalletInfo.address : '0x' + selectedWalletInfo.address}`}
                       size={200}
                       bgColor={"#ffffff"}
                       fgColor={"#000000"}
-                      level={"L"}
-                      includeMargin={false}
+                      level={selectedWalletInfo.privateKey ? "H" : "L"}
+                      includeMargin={selectedWalletInfo.privateKey ? true : false}
                     />
                   </div>
-                  <p className={styles.qrHelp}>Scan this QR code with MetaMask mobile app to add this wallet</p>
+                  {selectedWalletInfo.privateKey ? (
+                    <p className={styles.qrHelp}><strong>Warning:</strong> This QR code contains the private key - do NOT share it</p>
+                  ) : (
+                    <p className={styles.qrHelp}>Scan this QR code with MetaMask mobile app to add this wallet</p>
+                  )}
                 </div>
               </div>
               <div className={styles.walletInfoActions}>
