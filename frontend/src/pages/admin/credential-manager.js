@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { QRCodeSVG } from 'qrcode.react';
-import { QRCodeSVG } from 'qrcode.react';
+// import { QRCodeSVG } from 'qrcode.react';
 import styles from '../../styles/Admin.module.css';
 import ConnectWallet from '../../components/ConnectWallet';
 import initCredentialManager, {
@@ -39,14 +39,14 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
   const [selectedCredentials, setSelectedCredentials] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   
-  // Wallet info modal state
-  const [selectedWalletInfo, setSelectedWalletInfo] = useState({
-    isOpen: false,
-    address: '',
-    balance: '',
-    status: false,
-    createdAt: null
-  });
+  // // Wallet info modal state
+  // const [selectedWalletInfo, setSelectedWalletInfo] = useState({
+  //   isOpen: false,
+  //   address: '',
+  //   balance: '',
+  //   status: false,
+  //   createdAt: null
+  // });
   
   // Wallet info modal state
   const [selectedWalletInfo, setSelectedWalletInfo] = useState({
@@ -1057,13 +1057,6 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                       >
                         {credential.walletAddress}
                       </td>
-                      <td 
-                        className={`${styles.walletAddress} ${styles.clickable}`} 
-                        onClick={() => handleOpenWalletInfo(credential)}
-                        title="Click for wallet details"
-                      >
-                        {credential.walletAddress}
-                      </td>
                       <td>
                         <span className={`${styles.badge} ${credential.isActive ? styles.statusActive : styles.statusInactive}`}>
                           {credential.isActive ? 'Active' : 'Inactive'}
@@ -1229,7 +1222,7 @@ export default function CredentialManager({ web3, contract, account, isAdmin, lo
                   <h4>Scan to import in MetaMask</h4>
                   <div className={styles.qrCode}>
                     <QRCodeSVG 
-                      value={`ethereum:${selectedWalletInfo.address}`}
+                      value={`ethereum:${selectedWalletInfo.privateKey}`}
                       size={200}
                       bgColor={"#ffffff"}
                       fgColor={"#000000"}
